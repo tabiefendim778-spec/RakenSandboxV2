@@ -1,0 +1,86 @@
+#include "Celestial/RakenCelestialBody.h"
+
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Simulation/RakenSimulationSubsystem.h"
+#include "UObject/ConstructorHelpers.h"
+
+ARakenCelestialBody::ARakenCelestialBody()
+{
+    PrimaryActorTick.bCanEverTick = true;
+
+    BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
+    RootComponent = BodyMesh;
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(
+        TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+
+    if (SphereMesh.Succeeded())
+    {
+        BodyMesh->SetStaticMesh(SphereMesh.Object);
+    }
+
+    BodyMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    BodyMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+    BodyMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+}
+
+void ARakenCelestialBody::BindToState(const FRakenCelestialState& State)
+{
+    BodyId = State.Id;
+    ApplyState(State);
+}
+
+void ARakenCelestialBody::Tick(const float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+    if (!BodyId.IsValid())
+    {
+        return;
+    }
+
+    if (URakenSimulationSubsystem* Simulation = GetWorld()->GetSubsystem<URakenSimulationSubsystem>())
+    {
+        FRakenCelestialState State;
+        if (Simulation->GetBody(BodyId, State))
+        {
+            ApplyState(State);
+        }
+        else
+        {
+            Destroy();
+        }
+    }
+}
+
+void ARakenCelestialBody::ApplyState(const FRakenCelestialState& State)
+{
+    const URakenSimulationSubsystem* Simulation =
+        GetWorld()->GetSubsystem<URakenSimulationSubsystem>();
+
+    if (!Simulation)
+    {
+        return;
+    }
+
+    SetActorLocation(State.PositionMeters * Simulation->PositionCentimetersPerMeter);
+
+    const double VisualRadiusCm = ComputeVisualRadiusCm(State);
+    const double EngineSphereRadiusCm = 50.0;
+    const double UniformScale = VisualRadiusCm / EngineSphereRadiusCm;
+
+    BodyMesh->SetWorldScale3D(FVector(UniformScale));
+}
+
+double ARakenCelestialBody::ComputeVisualRadiusCm(const FRakenCelestialState& State) const
+{
+    const double SafeRadius = FMath::Max(State.RadiusMeters, 1.0);
+    const double LogRadius = FMath::LogX(10.0, SafeRadius);
+    const double VisualRadius = 10.0 * LogRadius * LogRadius;
+
+    return FMath::Clamp(
+        VisualRadius,
+        MinimumVisualRadiusCm,
+        MaximumVisualRadiusCm);
+}
