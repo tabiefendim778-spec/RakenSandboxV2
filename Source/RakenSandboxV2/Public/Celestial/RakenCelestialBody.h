@@ -39,6 +39,9 @@ public:
     TObjectPtr<UPointLightComponent> StarLight;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="RAKEN")
+    TObjectPtr<UStaticMeshComponent> AtmosphereMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="RAKEN")
     FGuid BodyId;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RAKEN|Rendering")
@@ -51,8 +54,12 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInstanceDynamic> DynamicMaterial;
 
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> AtmosphereMaterial;
+
     TArray<FVector> TrailPoints;
 
     void ApplyState(const FRakenCelestialState& State);
+    void ApplyMaterialForType(ERakenCelestialType Type);
     double ComputeVisualRadiusCm(const FRakenCelestialState& State) const;
 };
