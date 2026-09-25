@@ -19,3 +19,6 @@ StagedBuilds/
 # Local binary import staging
 Imported_US/
 ExternalAssets/
+.raken_tools/
+BuildLite/
+Lite/.godot/
