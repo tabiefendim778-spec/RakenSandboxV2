@@ -6,6 +6,8 @@
 #include "RakenCelestialBody.generated.h"
 
 class UStaticMeshComponent;
+class UPointLightComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class RAKENSANDBOXV2_API ARakenCelestialBody : public AActor
@@ -26,6 +28,9 @@ public:
     TObjectPtr<UStaticMeshComponent> BodyMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="RAKEN")
+    TObjectPtr<UPointLightComponent> StarLight;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="RAKEN")
     FGuid BodyId;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RAKEN|Rendering")
@@ -35,6 +40,9 @@ public:
     double MaximumVisualRadiusCm = 1800.0;
 
 private:
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> DynamicMaterial;
+
     void ApplyState(const FRakenCelestialState& State);
     double ComputeVisualRadiusCm(const FRakenCelestialState& State) const;
 };
