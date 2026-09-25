@@ -35,6 +35,12 @@ if (-not (Test-Path $BuildBat)) { throw "Build.bat bulunamadi." }
 if (-not (Test-Path $RunUAT)) { throw "RunUAT.bat bulunamadi." }
 if (-not (Test-Path $EditorCmd)) { throw "UnrealEditor-Cmd.exe bulunamadi." }
 
+if (-not (Test-Path (Join-Path $ProjectRoot "Content\\Maps\\L_Startup.umap"))) {
+    Write-Host "[0/4] Starter map olusturuluyor..." -ForegroundColor Yellow
+    & (Join-Path $PSScriptRoot "Bootstrap-Unreal.ps1") -UnrealRoot $EngineRoot
+    if ($LASTEXITCODE -ne 0) { throw "Bootstrap basarisiz." }
+}
+
 Write-Host "[1/4] C++ editor build..." -ForegroundColor Yellow
 & $BuildBat RakenSandboxV2Editor Win64 Development "-Project=$ProjectFile" -WaitMutex -FromMsBuild
 if ($LASTEXITCODE -ne 0) { throw "Editor C++ build basarisiz." }
