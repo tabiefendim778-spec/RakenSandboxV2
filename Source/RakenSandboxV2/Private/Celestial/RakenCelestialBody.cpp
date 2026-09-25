@@ -45,7 +45,9 @@ ARakenCelestialBody::ARakenCelestialBody()
 void ARakenCelestialBody::BindToState(const FRakenCelestialState& State)
 {
     BodyId = State.Id;
+    TrailPoints.Reset();
     ApplyState(State);
+    TrailPoints.Add(GetActorLocation());
 }
 
 bool ARakenCelestialBody::GetCurrentState(FRakenCelestialState& OutState) const
@@ -79,6 +81,19 @@ void ARakenCelestialBody::Tick(const float DeltaSeconds)
         if (Simulation->GetBody(BodyId, State))
         {
             ApplyState(State);
+
+            const FVector Current = GetActorLocation();
+            if (TrailPoints.Num() == 0 ||
+                FVector::DistSquared(Current, TrailPoints.Last()) >= MinTrailDistanceCm * MinTrailDistanceCm)
+            {
+                TrailPoints.Add(Current);
+
+                if (TrailPoints.Num() > MaxTrailPoints)
+                {
+                    const int32 RemoveCount = TrailPoints.Num() - MaxTrailPoints;
+                    TrailPoints.RemoveAt(0, RemoveCount, EAllowShrinking::No);
+                }
+            }
         }
         else
         {
