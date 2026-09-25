@@ -10,17 +10,18 @@ echo                   UNREAL SETUP
 echo ============================================================
 echo.
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Tools\Bootstrap-Unreal.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Tools\Prepare-Project.ps1"
 
 if errorlevel 1 (
     echo.
     echo SETUP HATASI
+    echo Pencere kapatilmayacak.
     pause
     exit /b 1
 )
 
 echo.
-echo Starter content hazir.
-echo RakenSandboxV2.uproject dosyasini Unreal Engine ile acabilirsin.
+echo RAKEN SANDBOX V2 proje hazir.
+echo Artik RakenSandboxV2.uproject dosyasini acabilirsin.
 echo.
 pause
