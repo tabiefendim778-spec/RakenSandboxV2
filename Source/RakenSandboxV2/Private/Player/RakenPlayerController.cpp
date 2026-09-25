@@ -5,6 +5,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "Simulation/RakenSimulationSubsystem.h"
+#include "UI/RakenHUD.h"
 
 ARakenPlayerController::ARakenPlayerController()
 {
@@ -34,6 +35,7 @@ void ARakenPlayerController::SetupInputComponent()
         InputComponent->BindAction(TEXT("SpawnMoon"), IE_Pressed, this, &ARakenPlayerController::SpawnMoonPreset);
         InputComponent->BindAction(TEXT("QuickSave"), IE_Pressed, this, &ARakenPlayerController::QuickSave);
         InputComponent->BindAction(TEXT("QuickLoad"), IE_Pressed, this, &ARakenPlayerController::QuickLoad);
+        InputComponent->BindAction(TEXT("ToggleSizeComparison"), IE_Pressed, this, &ARakenPlayerController::ToggleSizeComparison);
     }
 }
 
@@ -259,5 +261,13 @@ void ARakenPlayerController::RefreshBodyVisuals()
         {
             Visual->BindToState(State);
         }
+    }
+}
+
+void ARakenPlayerController::ToggleSizeComparison()
+{
+    if (ARakenHUD* RakenHUD = Cast<ARakenHUD>(GetHUD()))
+    {
+        RakenHUD->ToggleSizeComparison();
     }
 }
