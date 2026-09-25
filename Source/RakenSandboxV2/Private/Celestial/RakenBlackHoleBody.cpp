@@ -2,6 +2,7 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/RotatingMovementComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
 ARakenBlackHoleBody::ARakenBlackHoleBody()
@@ -29,4 +30,12 @@ void ARakenBlackHoleBody::BeginPlay()
 
     AccretionDisk->SetRelativeScale3D(
         FVector(DiskScaleMultiplier, DiskScaleMultiplier, 0.025f));
+
+    if (UMaterialInterface* DiskMaterial =
+        LoadObject<UMaterialInterface>(
+            nullptr,
+            TEXT("/Game/RAKEN/Materials/M_RakenAccretion.M_RakenAccretion")))
+    {
+        AccretionDisk->SetMaterial(0, DiskMaterial);
+    }
 }
