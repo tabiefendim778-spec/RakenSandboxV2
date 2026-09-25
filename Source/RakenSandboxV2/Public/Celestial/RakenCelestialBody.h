@@ -19,6 +19,9 @@ public:
 
     void BindToState(const FRakenCelestialState& State);
 
+    UFUNCTION(BlueprintCallable, Category="RAKEN|Celestial")
+    bool GetCurrentState(FRakenCelestialState& OutState) const;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="RAKEN")
     TObjectPtr<UStaticMeshComponent> BodyMesh;
 
