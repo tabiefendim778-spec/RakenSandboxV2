@@ -5,6 +5,11 @@ $ProjectDir = Join-Path $RepoRoot "Lite"
 $BuildDir = Join-Path $RepoRoot "BuildLite"
 $GetGodot = Join-Path $PSScriptRoot "Get-Godot.ps1"
 
+function Invoke-Godot([string[]]$Arguments) {
+    $Process = Start-Process -FilePath $GodotExe -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+    return $Process.ExitCode
+}
+
 try {
     $GodotExe = & $GetGodot -InstallTemplates
 
@@ -12,17 +17,19 @@ try {
 
     Write-Host ""
     Write-Host "[1/2] Proje headless kontrol ediliyor..." -ForegroundColor Yellow
-    & $GodotExe --headless --path $ProjectDir --editor --quit --rendering-method gl_compatibility
+    $CheckArgs = @("--headless", "--path", ('"' + $ProjectDir + '"'), "--editor", "--quit", "--rendering-method", "gl_compatibility")
+    $CheckCode = Invoke-Godot $CheckArgs
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Godot proje kontrolu basarisiz. ExitCode=$LASTEXITCODE"
+    if ($CheckCode -ne 0) {
+        throw "Godot proje kontrolu basarisiz. ExitCode=$CheckCode"
     }
 
     Write-Host "[2/2] Windows EXE olusturuluyor..." -ForegroundColor Yellow
-    & $GodotExe --headless --path $ProjectDir --export-release "Windows Desktop" --rendering-method gl_compatibility
+    $ExportArgs = @("--headless", "--path", ('"' + $ProjectDir + '"'), "--export-release", '"Windows Desktop"', "--rendering-method", "gl_compatibility")
+    $ExportCode = Invoke-Godot $ExportArgs
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Windows export basarisiz. ExitCode=$LASTEXITCODE"
+    if ($ExportCode -ne 0) {
+        throw "Windows export basarisiz. ExitCode=$ExportCode"
     }
 
     $Output = Join-Path $BuildDir "RAKEN_SANDBOX.exe"
