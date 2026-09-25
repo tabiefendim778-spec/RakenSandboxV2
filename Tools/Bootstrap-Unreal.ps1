@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $ProjectFile = Join-Path $ProjectRoot "RakenSandboxV2.uproject"
-$PythonFile = Join-Path $PSScriptRoot "CreateStarterContent.py"
+$PythonFile = Join-Path $PSScriptRoot "BootstrapProject.py"
 
 function Find-UnrealRoot {
     param([string]$Explicit)
