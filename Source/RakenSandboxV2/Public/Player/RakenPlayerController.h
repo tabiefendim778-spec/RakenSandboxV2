@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Celestial/RakenCelestialTypes.h"
 #include "RakenPlayerController.generated.h"
 
 class ARakenCelestialBody;
@@ -31,4 +32,12 @@ private:
     void TogglePause();
     void FasterTime();
     void SlowerTime();
+    void SpawnPlanetPreset();
+    void SpawnStarPreset();
+    void SpawnBlackHolePreset();
+    void SpawnMoonPreset();
+    void SpawnPreset(ERakenCelestialType Type);
+    void QuickSave();
+    void QuickLoad();
+    void RefreshBodyVisuals();
 };
