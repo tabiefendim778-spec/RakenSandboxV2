@@ -1,5 +1,10 @@
 #include "Simulation/RakenSimulationSubsystem.h"
 #include "Physics/RakenPhysics.h"
+#include "Simulation/RakenSimulationSave.h"
+#include "Dom/JsonObject.h"
+#include "JsonObjectConverter.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 
 TStatId URakenSimulationSubsystem::GetStatId() const
 {
@@ -38,6 +43,56 @@ void URakenSimulationSubsystem::ClearBodies()
 {
     Bodies.Reset();
     AccumulatorSeconds = 0.0;
+}
+
+bool URakenSimulationSubsystem::SaveSnapshot(const FString& SlotName)
+{
+    FRakenSimulationSnapshot Snapshot;
+    Snapshot.Bodies = Bodies;
+    Snapshot.TimeScale = TimeScale;
+    Snapshot.FixedStepSeconds = FixedStepSeconds;
+    Snapshot.bPaused = bPaused;
+
+    FString Json;
+    if (!FJsonObjectConverter::UStructToJsonObjectString(Snapshot, Json))
+    {
+        return false;
+    }
+
+    const FString SaveDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("RakenSaves"));
+    IFileManager::Get().MakeDirectory(*SaveDir, true);
+
+    const FString SafeSlot = FPaths::MakeValidFileName(SlotName.IsEmpty() ? TEXT("quick") : SlotName);
+    const FString FilePath = FPaths::Combine(SaveDir, SafeSlot + TEXT(".json"));
+
+    return FFileHelper::SaveStringToFile(Json, *FilePath);
+}
+
+bool URakenSimulationSubsystem::LoadSnapshot(const FString& SlotName)
+{
+    const FString SaveDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("RakenSaves"));
+    const FString SafeSlot = FPaths::MakeValidFileName(SlotName.IsEmpty() ? TEXT("quick") : SlotName);
+    const FString FilePath = FPaths::Combine(SaveDir, SafeSlot + TEXT(".json"));
+
+    FString Json;
+    if (!FFileHelper::LoadFileToString(Json, *FilePath))
+    {
+        return false;
+    }
+
+    FRakenSimulationSnapshot Snapshot;
+    if (!FJsonObjectConverter::JsonObjectStringToUStruct(Json, &Snapshot))
+    {
+        return false;
+    }
+
+    Bodies = Snapshot.Bodies;
+    TimeScale = Snapshot.TimeScale;
+    FixedStepSeconds = Snapshot.FixedStepSeconds;
+    bPaused = Snapshot.bPaused;
+    AccumulatorSeconds = 0.0;
+
+    return true;
 }
 
 bool URakenSimulationSubsystem::GetBody(const FGuid Id, FRakenCelestialState& OutState) const
