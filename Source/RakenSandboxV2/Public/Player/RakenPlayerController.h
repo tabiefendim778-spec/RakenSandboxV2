@@ -28,4 +28,7 @@ private:
     TObjectPtr<ARakenCelestialBody> SelectedBody;
 
     void SelectUnderCursor();
+    void TogglePause();
+    void FasterTime();
+    void SlowerTime();
 };
