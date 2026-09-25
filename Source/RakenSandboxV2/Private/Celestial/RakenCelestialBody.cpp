@@ -31,6 +31,22 @@ void ARakenCelestialBody::BindToState(const FRakenCelestialState& State)
     ApplyState(State);
 }
 
+bool ARakenCelestialBody::GetCurrentState(FRakenCelestialState& OutState) const
+{
+    if (!BodyId.IsValid() || !GetWorld())
+    {
+        return false;
+    }
+
+    if (const URakenSimulationSubsystem* Simulation =
+        GetWorld()->GetSubsystem<URakenSimulationSubsystem>())
+    {
+        return Simulation->GetBody(BodyId, OutState);
+    }
+
+    return false;
+}
+
 void ARakenCelestialBody::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
