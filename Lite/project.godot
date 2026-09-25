@@ -21,18 +21,3 @@ textures/default_filters/use_nearest_mipmap_filter=false
 anti_aliasing/quality/msaa_3d=2
 environment/defaults/default_clear_color=Color(0.003, 0.004, 0.012, 1)
 
-[input]
-move_forward={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":87)]}
-move_back={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":83)]}
-move_left={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":65)]}
-move_right={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":68)]}
-move_up={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":69)]}
-move_down={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":81)]}
-boost={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":4194325)]}
-pause_sim={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":32)]}
-faster_time={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":93)]}
-slower_time={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":91)]}
-spawn_planet={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":49)]}
-spawn_star={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":50)]}
-spawn_black_hole={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":51)]}
-toggle_hud={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":9)]}
