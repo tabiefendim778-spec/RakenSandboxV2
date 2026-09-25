@@ -8,6 +8,8 @@
 #include "Player/RakenPlayerController.h"
 #include "UI/RakenHUD.h"
 #include "Simulation/RakenSimulationSubsystem.h"
+#include "Settings/RakenGraphicsSettings.h"
+#include "GenericPlatform/GenericPlatformMisc.h"
 
 ARakenGameMode::ARakenGameMode()
 {
@@ -19,6 +21,16 @@ ARakenGameMode::ARakenGameMode()
 void ARakenGameMode::BeginPlay()
 {
     Super::BeginPlay();
+    const FString GPUBrand = FPlatformMisc::GetPrimaryGPUBrand();
+    if (GPUBrand.Contains(TEXT("Intel"), ESearchCase::IgnoreCase))
+    {
+        URakenGraphicsSettings::ApplyQualityPreset(ERakenQualityPreset::Compatibility);
+    }
+    else
+    {
+        URakenGraphicsSettings::ApplyQualityPreset(ERakenQualityPreset::High);
+    }
+
     BootstrapSolarSystem();
 
     if (GEngine)
