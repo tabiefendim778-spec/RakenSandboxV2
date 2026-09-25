@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/StaticMesh.h"
 #include "Simulation/RakenSimulationSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
@@ -20,31 +21,31 @@ ARakenCelestialBody::ARakenCelestialBody()
     StarLight->SetCastShadows(true);
     StarLight->SetAttenuationRadius(100000000.0f);
 
+    AtmosphereMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AtmosphereMesh"));
+    AtmosphereMesh->SetupAttachment(BodyMesh);
+    AtmosphereMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    AtmosphereMesh->SetCastShadow(false);
+    AtmosphereMesh->SetVisibility(false);
+
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(
         TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 
     if (SphereMesh.Succeeded())
     {
         BodyMesh->SetStaticMesh(SphereMesh.Object);
+        AtmosphereMesh->SetStaticMesh(SphereMesh.Object);
     }
 
     BodyMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     BodyMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
     BodyMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-    if (UMaterialInterface* BaseMaterial = BodyMesh->GetMaterial(0))
-    {
-        DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-        if (DynamicMaterial)
-        {
-            BodyMesh->SetMaterial(0, DynamicMaterial);
-        }
-    }
 }
 
 void ARakenCelestialBody::BindToState(const FRakenCelestialState& State)
 {
     BodyId = State.Id;
+    ApplyMaterialForType(State.Type);
     TrailPoints.Reset();
     ApplyState(State);
     TrailPoints.Add(GetActorLocation());
@@ -119,11 +120,30 @@ void ARakenCelestialBody::ApplyState(const FRakenCelestialState& State)
     const double UniformScale = VisualRadiusCm / EngineSphereRadiusCm;
 
     BodyMesh->SetWorldScale3D(FVector(UniformScale));
+    AtmosphereMesh->SetRelativeScale3D(FVector(1.035));
 
     if (DynamicMaterial)
     {
         DynamicMaterial->SetVectorParameterValue(TEXT("Color"), State.BaseColor);
         DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), State.BaseColor);
+
+        if (State.Type == ERakenCelestialType::Star ||
+            State.Type == ERakenCelestialType::NeutronStar)
+        {
+            DynamicMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), 18.0f);
+        }
+    }
+
+    const bool bHasAtmosphere = State.Type == ERakenCelestialType::Planet;
+    AtmosphereMesh->SetVisibility(bHasAtmosphere);
+
+    if (AtmosphereMaterial && bHasAtmosphere)
+    {
+        AtmosphereMaterial->SetVectorParameterValue(
+            TEXT("AtmosphereColor"),
+            FLinearColor(0.08f, 0.34f, 1.0f, 1.0f));
+        AtmosphereMaterial->SetScalarParameterValue(TEXT("AtmosphereStrength"), 1.6f);
+        AtmosphereMaterial->SetScalarParameterValue(TEXT("AtmosphereOpacity"), 0.18f);
     }
 
     const bool bIsStar =
@@ -151,4 +171,41 @@ double ARakenCelestialBody::ComputeVisualRadiusCm(const FRakenCelestialState& St
         VisualRadius,
         MinimumVisualRadiusCm,
         MaximumVisualRadiusCm);
+}
+
+void ARakenCelestialBody::ApplyMaterialForType(const ERakenCelestialType Type)
+{
+    const TCHAR* MaterialPath = TEXT("/Game/RAKEN/Materials/M_RakenPlanet.M_RakenPlanet");
+
+    if (Type == ERakenCelestialType::Star || Type == ERakenCelestialType::NeutronStar)
+    {
+        MaterialPath = TEXT("/Game/RAKEN/Materials/M_RakenStar.M_RakenStar");
+    }
+    else if (Type == ERakenCelestialType::BlackHole)
+    {
+        MaterialPath = TEXT("/Game/RAKEN/Materials/M_RakenBlackHole.M_RakenBlackHole");
+    }
+
+    if (UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, MaterialPath))
+    {
+        DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+
+        if (DynamicMaterial)
+        {
+            BodyMesh->SetMaterial(0, DynamicMaterial);
+        }
+    }
+
+    if (UMaterialInterface* AtmosphereBase =
+        LoadObject<UMaterialInterface>(
+            nullptr,
+            TEXT("/Game/RAKEN/Materials/M_RakenAtmosphere.M_RakenAtmosphere")))
+    {
+        AtmosphereMaterial = UMaterialInstanceDynamic::Create(AtmosphereBase, this);
+
+        if (AtmosphereMaterial)
+        {
+            AtmosphereMesh->SetMaterial(0, AtmosphereMaterial);
+        }
+    }
 }
