@@ -26,6 +26,12 @@ void ARakenHUD::DrawHUD()
 {
     Super::DrawHUD();
 
+    if (bShowSizeComparison)
+    {
+        DrawSizeComparison();
+        return;
+    }
+
     float Y = 28.0f;
 
     if (ARakenPlayerController* TrailPC = Cast<ARakenPlayerController>(GetOwningPlayerController()))
@@ -95,4 +101,89 @@ void ARakenHUD::DrawHUD()
     DrawTextLine(FString::Printf(TEXT("Radius: %.3e m"), State.RadiusMeters), Y, FLinearColor(0.85f, 0.85f, 0.85f));
     DrawTextLine(FString::Printf(TEXT("Temp: %.0f K"), State.SurfaceTemperatureKelvin), Y, FLinearColor(0.85f, 0.85f, 0.85f));
     DrawTextLine(FString::Printf(TEXT("Speed: %.1f m/s"), State.VelocityMetersPerSecond.Size()), Y, FLinearColor(0.85f, 0.85f, 0.85f));
+}
+
+void ARakenHUD::DrawSizeComparison()
+{
+    if (!Canvas || !GetWorld())
+    {
+        return;
+    }
+
+    const URakenSimulationSubsystem* Simulation =
+        GetWorld()->GetSubsystem<URakenSimulationSubsystem>();
+
+    if (!Simulation)
+    {
+        return;
+    }
+
+    TArray<FRakenCelestialState> Sorted = Simulation->GetBodies();
+
+    Sorted.Sort([](const FRakenCelestialState& A, const FRakenCelestialState& B)
+    {
+        return A.RadiusMeters > B.RadiusMeters;
+    });
+
+    DrawRect(
+        FLinearColor(0.015f, 0.02f, 0.035f, 0.94f),
+        0.0f,
+        0.0f,
+        Canvas->SizeX,
+        Canvas->SizeY);
+
+    float Y = 36.0f;
+    DrawTextLine(
+        TEXT("RAKEN SANDBOX V2 - SIZE COMPARISON"),
+        Y,
+        FLinearColor(0.2f, 0.85f, 1.0f),
+        1.25f);
+
+    DrawTextLine(
+        TEXT("TAB: return to simulation"),
+        Y,
+        FLinearColor(0.65f, 0.65f, 0.65f));
+
+    Y += 28.0f;
+
+    const int32 Count = FMath::Min(Sorted.Num(), 14);
+
+    if (Count == 0)
+    {
+        DrawTextLine(TEXT("No bodies"), Y, FLinearColor::White);
+        return;
+    }
+
+    const double LargestLogRadius =
+        FMath::Max(FMath::LogX(10.0, FMath::Max(Sorted[0].RadiusMeters, 1.0)), 1.0);
+
+    for (int32 Index = 0; Index < Count; ++Index)
+    {
+        const FRakenCelestialState& Body = Sorted[Index];
+
+        const double LogRadius =
+            FMath::Max(FMath::LogX(10.0, FMath::Max(Body.RadiusMeters, 1.0)), 0.1);
+
+        const float Fraction = static_cast<float>(LogRadius / LargestLogRadius);
+        const float BarWidth = FMath::Max(80.0f, (Canvas->SizeX - 380.0f) * Fraction);
+
+        DrawText(
+            FString::Printf(
+                TEXT("%2d. %-18s  radius %.3e m"),
+                Index + 1,
+                *Body.DisplayName.ToString(),
+                Body.RadiusMeters),
+            FLinearColor::White,
+            36.0f,
+            Y);
+
+        DrawRect(
+            Body.BaseColor,
+            330.0f,
+            Y + 4.0f,
+            BarWidth,
+            12.0f);
+
+        Y += 34.0f;
+    }
 }
