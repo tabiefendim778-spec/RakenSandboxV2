@@ -11,7 +11,9 @@ public class RakenSandboxV2 : ModuleRules
             "Core",
             "CoreUObject",
             "Engine",
-            "InputCore"
+            "InputCore",
+            "Json",
+            "JsonUtilities"
         });
     }
 }
