@@ -5,6 +5,7 @@
 #include "Player/RakenPlayerController.h"
 #include "Simulation/RakenSimulationSubsystem.h"
 #include "Engine/Canvas.h"
+#include "EngineUtils.h"
 
 void ARakenHUD::DrawTextLine(
     const FString& Text,
@@ -26,6 +27,30 @@ void ARakenHUD::DrawHUD()
     Super::DrawHUD();
 
     float Y = 28.0f;
+
+    if (ARakenPlayerController* TrailPC = Cast<ARakenPlayerController>(GetOwningPlayerController()))
+    {
+        for (TActorIterator<ARakenCelestialBody> It(GetWorld()); It; ++It)
+        {
+            const TArray<FVector>& Trail = It->GetTrailPoints();
+
+            for (int32 Index = 1; Index < Trail.Num(); ++Index)
+            {
+                FVector2D A;
+                FVector2D B;
+
+                if (TrailPC->ProjectWorldLocationToScreen(Trail[Index - 1], A, true) &&
+                    TrailPC->ProjectWorldLocationToScreen(Trail[Index], B, true))
+                {
+                    Canvas->K2_DrawLine(
+                        A,
+                        B,
+                        1.0f,
+                        FLinearColor(0.2f, 0.55f, 1.0f, 0.35f));
+                }
+            }
+        }
+    }
 
     DrawTextLine(TEXT("RAKEN SANDBOX V2"), Y, FLinearColor(0.2f, 0.85f, 1.0f), 1.2f);
 
@@ -52,6 +77,8 @@ void ARakenHUD::DrawHUD()
     {
         Y += 12.0f;
         DrawTextLine(TEXT("Left click: select body"), Y, FLinearColor(0.65f, 0.65f, 0.65f));
+        DrawTextLine(TEXT("1 Planet  2 Star  3 Black Hole  4 Moon"), Y, FLinearColor(0.65f, 0.65f, 0.65f));
+        DrawTextLine(TEXT("[ / ] Time  Space Pause  F5 Save  F9 Load"), Y, FLinearColor(0.65f, 0.65f, 0.65f));
         return;
     }
 
