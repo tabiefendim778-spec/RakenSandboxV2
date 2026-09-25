@@ -24,6 +24,12 @@ public:
     UFUNCTION(BlueprintCallable, Category="RAKEN|Simulation")
     void ClearBodies();
 
+    UFUNCTION(BlueprintCallable, Category="RAKEN|Save")
+    bool SaveSnapshot(const FString& SlotName = TEXT("quick"));
+
+    UFUNCTION(BlueprintCallable, Category="RAKEN|Save")
+    bool LoadSnapshot(const FString& SlotName = TEXT("quick"));
+
     UFUNCTION(BlueprintCallable, Category="RAKEN|Simulation")
     bool GetBody(FGuid Id, FRakenCelestialState& OutState) const;
 
