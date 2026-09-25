@@ -9,6 +9,7 @@
 #include "UI/RakenHUD.h"
 #include "Simulation/RakenSimulationSubsystem.h"
 #include "Settings/RakenGraphicsSettings.h"
+#include "Rendering/RakenStarfield.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 
 ARakenGameMode::ARakenGameMode()
@@ -32,6 +33,11 @@ void ARakenGameMode::BeginPlay()
     }
 
     BootstrapSolarSystem();
+
+    GetWorld()->SpawnActor<ARakenStarfield>(
+        ARakenStarfield::StaticClass(),
+        FVector::ZeroVector,
+        FRotator::ZeroRotator);
 
     if (GEngine)
     {
