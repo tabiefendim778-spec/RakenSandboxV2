@@ -1,0 +1,21 @@
+# Unreal Engine generated files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+*.VC.db
+*.VC.opendb
+*.sln
+*.suo
+*.user
+*.opensdf
+*.sdf
+
+# Packaging
+Build/Windows/
+StagedBuilds/
+
+# Local binary import staging
+Imported_US/
+ExternalAssets/
