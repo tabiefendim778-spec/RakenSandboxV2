@@ -29,7 +29,7 @@ func _build() -> void:
     var rng := RandomNumberGenerator.new()
     rng.seed = 778
 
-    for i in star_count:
+    for i in range(star_count):
         var dir := Vector3(
             rng.randf_range(-1.0, 1.0),
             rng.randf_range(-1.0, 1.0),
