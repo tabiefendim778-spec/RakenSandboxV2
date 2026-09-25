@@ -24,6 +24,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="RAKEN|Celestial")
     bool GetCurrentState(FRakenCelestialState& OutState) const;
 
+    const TArray<FVector>& GetTrailPoints() const { return TrailPoints; }
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RAKEN|Orbit")
+    int32 MaxTrailPoints = 256;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RAKEN|Orbit")
+    double MinTrailDistanceCm = 250.0;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="RAKEN")
     TObjectPtr<UStaticMeshComponent> BodyMesh;
 
@@ -42,6 +50,8 @@ public:
 private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInstanceDynamic> DynamicMaterial;
+
+    TArray<FVector> TrailPoints;
 
     void ApplyState(const FRakenCelestialState& State);
     double ComputeVisualRadiusCm(const FRakenCelestialState& State) const;
