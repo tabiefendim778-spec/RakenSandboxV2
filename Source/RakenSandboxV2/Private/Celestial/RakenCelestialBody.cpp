@@ -1,6 +1,8 @@
 #include "Celestial/RakenCelestialBody.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/StaticMesh.h"
 #include "Simulation/RakenSimulationSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
@@ -11,6 +13,12 @@ ARakenCelestialBody::ARakenCelestialBody()
 
     BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
     RootComponent = BodyMesh;
+
+    StarLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("StarLight"));
+    StarLight->SetupAttachment(BodyMesh);
+    StarLight->SetVisibility(false);
+    StarLight->SetCastShadows(true);
+    StarLight->SetAttenuationRadius(100000000.0f);
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(
         TEXT("/Engine/BasicShapes/Sphere.Sphere"));
@@ -23,6 +31,15 @@ ARakenCelestialBody::ARakenCelestialBody()
     BodyMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     BodyMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
     BodyMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+    if (UMaterialInterface* BaseMaterial = BodyMesh->GetMaterial(0))
+    {
+        DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+        if (DynamicMaterial)
+        {
+            BodyMesh->SetMaterial(0, DynamicMaterial);
+        }
+    }
 }
 
 void ARakenCelestialBody::BindToState(const FRakenCelestialState& State)
@@ -87,6 +104,26 @@ void ARakenCelestialBody::ApplyState(const FRakenCelestialState& State)
     const double UniformScale = VisualRadiusCm / EngineSphereRadiusCm;
 
     BodyMesh->SetWorldScale3D(FVector(UniformScale));
+
+    if (DynamicMaterial)
+    {
+        DynamicMaterial->SetVectorParameterValue(TEXT("Color"), State.BaseColor);
+        DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), State.BaseColor);
+    }
+
+    const bool bIsStar =
+        State.Type == ERakenCelestialType::Star ||
+        State.Type == ERakenCelestialType::NeutronStar;
+
+    StarLight->SetVisibility(bIsStar);
+
+    if (bIsStar)
+    {
+        StarLight->SetLightColor(State.BaseColor);
+        const double SolarMasses = FMath::Max(State.MassKg / 1.98847e30, 0.01);
+        const float Intensity = static_cast<float>(150000.0 * FMath::Pow(SolarMasses, 0.75));
+        StarLight->SetIntensity(Intensity);
+    }
 }
 
 double ARakenCelestialBody::ComputeVisualRadiusCm(const FRakenCelestialState& State) const
