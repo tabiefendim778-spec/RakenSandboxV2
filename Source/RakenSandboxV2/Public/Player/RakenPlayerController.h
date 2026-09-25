@@ -39,5 +39,6 @@ private:
     void SpawnPreset(ERakenCelestialType Type);
     void QuickSave();
     void QuickLoad();
+    void ToggleSizeComparison();
     void RefreshBodyVisuals();
 };
