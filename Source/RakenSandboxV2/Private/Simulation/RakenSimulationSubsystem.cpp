@@ -58,7 +58,7 @@ bool URakenSimulationSubsystem::GetBody(const FGuid Id, FRakenCelestialState& Ou
 
 void URakenSimulationSubsystem::Tick(const float DeltaTime)
 {
-    if (Bodies.Num() == 0 || FixedStepSeconds <= 0.0 || TimeScale <= 0.0)
+    if (bPaused || Bodies.Num() == 0 || FixedStepSeconds <= 0.0 || TimeScale <= 0.0)
     {
         return;
     }
