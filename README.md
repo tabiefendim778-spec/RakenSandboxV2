@@ -1,5 +1,18 @@
 # RAKEN SANDBOX V2
 
+## RAKEN LITE — Unreal gerektirmeyen sürüm
+
+Disk alanı az olan Windows sistemleri için repoda ikinci bir çalışma hattı vardır.
+
+- `RUN_LITE.bat`: portable Godot 4.7.2 motorunu ilk çalıştırmada otomatik indirir ve oyunu açar.
+- `BUILD_LITE.bat`: Windows `RAKEN_SANDBOX.exe` üretmek için export template'i otomatik hazırlar.
+- Kaynak proje: `Lite/`
+- Ayrıntılar: `LITE_README_TR.md`
+
+Lite sürüm; animasyonlu giriş/ana menü, ayarlar ekranı, prosedürel uzay arka planı, N-body fizik, atmosferli gezegenler, yıldızlar, karadelik + akresyon diski, Satürn halkası, obje inspector, pause menüsü ve quick save/load ile hazırlanıyor.
+
+---
+
 Unreal Engine 5 C++ rebuild of RAKEN SANDBOX.
 
 ## Current milestone
