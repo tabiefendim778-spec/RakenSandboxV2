@@ -160,11 +160,11 @@ func _simulate(delta: float) -> void:
     var substeps := clampi(int(ceil(total_dt / 1200.0)), 1, 10)
     var dt := total_dt / float(substeps)
 
-    for _step in substeps:
+    for _step in range(substeps):
         var accelerations: Array[Vector3] = []
         accelerations.resize(bodies.size())
 
-        for i in bodies.size():
+        for i in range(bodies.size()):
             accelerations[i] = Vector3.ZERO
             if bool(bodies[i].get("fixed", false)):
                 continue
@@ -172,7 +172,7 @@ func _simulate(delta: float) -> void:
             var pos_i: Vector3 = bodies[i]["pos"]
             var acceleration := Vector3.ZERO
 
-            for j in bodies.size():
+            for j in range(bodies.size()):
                 if i == j:
                     continue
 
@@ -597,7 +597,7 @@ func _quick_load() -> void:
         return
 
     var parsed = JSON.parse_string(file.get_as_text())
-    if not parsed is Dictionary:
+    if not (parsed is Dictionary):
         hud.flash_notice("SAVE FILE ERROR")
         return
 
