@@ -3,6 +3,7 @@
 #include "Celestial/RakenCelestialBody.h"
 #include "Celestial/RakenCelestialTypes.h"
 #include "Engine/Engine.h"
+#include "GameFramework/PlayerController.h"
 #include "Player/RakenSpacePawn.h"
 #include "Simulation/RakenSimulationSubsystem.h"
 
