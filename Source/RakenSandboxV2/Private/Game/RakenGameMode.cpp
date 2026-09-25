@@ -5,11 +5,15 @@
 #include "Engine/Engine.h"
 #include "GameFramework/PlayerController.h"
 #include "Player/RakenSpacePawn.h"
+#include "Player/RakenPlayerController.h"
+#include "UI/RakenHUD.h"
 #include "Simulation/RakenSimulationSubsystem.h"
 
 ARakenGameMode::ARakenGameMode()
 {
     DefaultPawnClass = ARakenSpacePawn::StaticClass();
+    PlayerControllerClass = ARakenPlayerController::StaticClass();
+    HUDClass = ARakenHUD::StaticClass();
 }
 
 void ARakenGameMode::BeginPlay()
