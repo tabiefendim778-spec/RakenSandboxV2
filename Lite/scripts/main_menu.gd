@@ -286,9 +286,13 @@ func _on_quality_selected(index: int) -> void:
     quality_changed.emit(index)
 
 func _on_fullscreen_toggled(enabled: bool) -> void:
-    var mode: DisplayServer.WindowMode = DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED
-    DisplayServer.window_set_mode(mode)
+    if enabled:
+        DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+    else:
+        DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 
 func _on_vsync_toggled(enabled: bool) -> void:
-    var mode: DisplayServer.VSyncMode = DisplayServer.VSYNC_ENABLED if enabled else DisplayServer.VSYNC_DISABLED
-    DisplayServer.window_set_vsync_mode(mode)
+    if enabled:
+        DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
+    else:
+        DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
