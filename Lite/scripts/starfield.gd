@@ -7,50 +7,56 @@ func _ready() -> void:
     _build()
 
 func _build() -> void:
-    var counts := [500, 950, 1500]
+    var counts: Array[int] = [520, 980, 1500]
     var star_count: int = counts[clampi(quality_level, 0, 2)]
 
-    var star_mesh := SphereMesh.new()
+    var star_mesh: SphereMesh = SphereMesh.new()
     star_mesh.radius = 1.0
     star_mesh.height = 2.0
     star_mesh.radial_segments = 6
     star_mesh.rings = 3
 
-    var mat := ShaderMaterial.new()
-    mat.shader = load("res://shaders/stars.gdshader")
-    star_mesh.material = mat
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/stars.gdshader") as Shader
+    star_mesh.material = material
 
-    var mm := MultiMesh.new()
-    mm.transform_format = MultiMesh.TRANSFORM_3D
-    mm.use_colors = true
-    mm.mesh = star_mesh
-    mm.instance_count = star_count
+    var multi_mesh: MultiMesh = MultiMesh.new()
+    multi_mesh.transform_format = MultiMesh.TRANSFORM_3D
+    multi_mesh.use_colors = true
+    multi_mesh.mesh = star_mesh
+    multi_mesh.instance_count = star_count
 
-    var rng := RandomNumberGenerator.new()
-    rng.seed = 778
+    var random: RandomNumberGenerator = RandomNumberGenerator.new()
+    random.seed = 778
 
-    for i in range(star_count):
-        var dir := Vector3(
-            rng.randf_range(-1.0, 1.0),
-            rng.randf_range(-1.0, 1.0),
-            rng.randf_range(-1.0, 1.0)
-        ).normalized()
+    for i: int in range(star_count):
+        var direction: Vector3 = Vector3(
+            random.randf_range(-1.0, 1.0),
+            random.randf_range(-1.0, 1.0),
+            random.randf_range(-1.0, 1.0)
+        )
 
-        if dir.length_squared() < 0.1:
-            dir = Vector3.FORWARD
+        if direction.length_squared() < 0.02:
+            direction = Vector3.FORWARD
+        else:
+            direction = direction.normalized()
 
-        var dist := radius * rng.randf_range(0.92, 1.08)
-        var size := rng.randf_range(0.12, 0.62)
-        var transform := Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * size), dir * dist)
-        mm.set_instance_transform(i, transform)
+        var distance_value: float = radius * random.randf_range(0.92, 1.08)
+        var size_value: float = random.randf_range(0.10, 0.56)
+        var transform_value: Transform3D = Transform3D(
+            Basis.IDENTITY.scaled(Vector3.ONE * size_value),
+            direction * distance_value
+        )
+        multi_mesh.set_instance_transform(i, transform_value)
 
-        var temperature_mix := rng.randf()
-        var color := Color(0.58, 0.72, 1.0)
-        if temperature_mix > 0.72:
-            color = Color(1.0, 0.78, 0.50)
-        elif temperature_mix > 0.42:
-            color = Color(0.92, 0.95, 1.0)
+        var temperature_mix: float = random.randf()
+        var color_value: Color = Color(0.58, 0.72, 1.0)
 
-        mm.set_instance_color(i, color * rng.randf_range(0.55, 1.15))
+        if temperature_mix > 0.76:
+            color_value = Color(1.0, 0.76, 0.45)
+        elif temperature_mix > 0.44:
+            color_value = Color(0.90, 0.94, 1.0)
 
-    multimesh = mm
+        multi_mesh.set_instance_color(i, color_value * random.randf_range(0.58, 1.12))
+
+    multimesh = multi_mesh
