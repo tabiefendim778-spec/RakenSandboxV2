@@ -36,6 +36,9 @@ public:
     double TimeScale = 3600.0;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RAKEN|Simulation")
+    bool bPaused = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RAKEN|Simulation")
     double FixedStepSeconds = 60.0;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RAKEN|Simulation")
