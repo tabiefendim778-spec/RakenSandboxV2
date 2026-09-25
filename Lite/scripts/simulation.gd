@@ -2,23 +2,22 @@ extends Node3D
 
 signal exit_requested
 
-const G_KM := 6.67430e-20
-const POSITION_SCALE := 0.000004
-const MAX_BODIES := 96
-
-const StarfieldScript = preload("res://scripts/starfield.gd")
-const HUDScript = preload("res://scripts/hud.gd")
+const G_KM: float = 6.67430e-20
+const POSITION_SCALE: float = 0.000004
+const MAX_BODIES: int = 96
+const STARFIELD_SCRIPT: Script = preload("res://scripts/starfield.gd")
+const HUD_SCRIPT: Script = preload("res://scripts/hud.gd")
 
 var quality_level: int = 1
 var bodies: Array[Dictionary] = []
-var camera: Camera3D
-var hud: CanvasLayer
-var sim_paused := false
-var pause_menu_open := false
-var time_scale := 7200.0
-var mouse_sensitivity := 0.0022
-var camera_speed := 260.0
-var selected_index := -1
+var camera: Camera3D = null
+var hud: CanvasLayer = null
+var sim_paused: bool = false
+var pause_menu_open: bool = false
+var time_scale: float = 7200.0
+var mouse_sensitivity: float = 0.0021
+var camera_speed: float = 250.0
+var selected_index: int = -1
 
 func _ready() -> void:
     _build_world()
@@ -32,110 +31,105 @@ func _exit_tree() -> void:
     Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _build_world() -> void:
-    var world_env := WorldEnvironment.new()
-    var env := Environment.new()
-    env.background_mode = Environment.BG_COLOR
-    env.background_color = Color(0.0015, 0.0025, 0.009, 1.0)
-    env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color(0.08, 0.11, 0.18)
-    env.ambient_light_energy = 0.16
-    env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-    world_env.environment = env
-    add_child(world_env)
+    var world_environment: WorldEnvironment = WorldEnvironment.new()
+    var environment: Environment = Environment.new()
+    environment.background_mode = Environment.BG_COLOR
+    environment.background_color = Color(0.0008, 0.0016, 0.0060, 1.0)
+    environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+    environment.ambient_light_color = Color(0.045, 0.065, 0.11)
+    environment.ambient_light_energy = 0.18
+    environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    world_environment.environment = environment
+    add_child(world_environment)
 
 func _build_camera() -> void:
     camera = Camera3D.new()
-    camera.fov = 72.0
+    camera.fov = 70.0
     camera.near = 0.08
-    camera.far = 25000.0
-    camera.position = Vector3(210.0, 175.0, 820.0)
+    camera.far = 24000.0
+    camera.position = Vector3(410.0, 210.0, 910.0)
     add_child(camera)
     camera.look_at(Vector3.ZERO, Vector3.UP)
 
 func _build_starfield() -> void:
-    var stars = StarfieldScript.new()
-    stars.quality_level = quality_level
+    var stars: Node = STARFIELD_SCRIPT.new()
+    stars.set("quality_level", quality_level)
     add_child(stars)
 
 func _build_hud() -> void:
-    hud = HUDScript.new()
-    hud.return_to_menu_requested.connect(_return_to_menu)
-    add_child(hud)
+    var hud_node: Node = HUD_SCRIPT.new()
+    hud_node.connect("resume_requested", Callable(self, "_resume_from_menu"))
+    hud_node.connect("return_to_menu_requested", Callable(self, "_return_to_menu"))
+    hud = hud_node as CanvasLayer
+    add_child(hud_node)
 
 func _seed_solar_system() -> void:
     bodies.clear()
 
-    _add_body({
-        "name": "Sun",
-        "type": "STAR",
-        "mass": 1.98847e30,
-        "radius": 695700.0,
-        "pos": Vector3.ZERO,
-        "vel": Vector3.ZERO,
-        "temp": 5772.0,
-        "color": Color(1.0, 0.56, 0.14),
-        "fixed": true
-    })
+    _add_body(_make_body(
+        "Sun", "STAR", 1.98847e30, 695700.0,
+        Vector3.ZERO, Vector3.ZERO, 5772.0,
+        Color(1.0, 0.55, 0.12), true
+    ))
 
-    _add_body({
-        "name": "Earth",
-        "type": "PLANET",
-        "mass": 5.9722e24,
-        "radius": 6371.0,
-        "pos": Vector3(149597870.7, 0.0, 0.0),
-        "vel": Vector3(0.0, 0.0, 29.78),
-        "temp": 288.0,
-        "color": Color(0.05, 0.30, 0.95),
-        "fixed": false
-    })
+    _add_body(_make_body(
+        "Earth", "PLANET", 5.9722e24, 6371.0,
+        Vector3(149597870.7, 0.0, 0.0),
+        Vector3(0.0, 0.0, 29.78), 288.0,
+        Color(0.035, 0.28, 0.92), false
+    ))
 
-    _add_body({
-        "name": "Moon",
-        "type": "MOON",
-        "mass": 7.342e22,
-        "radius": 1737.4,
-        "pos": Vector3(149982270.7, 0.0, 0.0),
-        "vel": Vector3(0.0, 0.0, 30.802),
-        "temp": 250.0,
-        "color": Color(0.58, 0.60, 0.64),
-        "fixed": false
-    })
+    _add_body(_make_body(
+        "Moon", "MOON", 7.342e22, 1737.4,
+        Vector3(149982270.7, 0.0, 0.0),
+        Vector3(0.0, 0.0, 30.802), 250.0,
+        Color(0.50, 0.52, 0.56), false
+    ))
 
-    _add_body({
-        "name": "Mars",
-        "type": "PLANET",
-        "mass": 6.4171e23,
-        "radius": 3389.5,
-        "pos": Vector3(0.0, 0.0, -227939200.0),
-        "vel": Vector3(24.077, 0.0, 0.0),
-        "temp": 210.0,
-        "color": Color(0.76, 0.22, 0.08),
-        "fixed": false
-    })
+    _add_body(_make_body(
+        "Mars", "ROCKY", 6.4171e23, 3389.5,
+        Vector3(0.0, 0.0, -227939200.0),
+        Vector3(24.077, 0.0, 0.0), 210.0,
+        Color(0.72, 0.17, 0.055), false
+    ))
 
-    _add_body({
-        "name": "Jupiter",
-        "type": "PLANET",
-        "mass": 1.89813e27,
-        "radius": 69911.0,
-        "pos": Vector3(-778570000.0, 0.0, 0.0),
-        "vel": Vector3(0.0, 0.0, -13.07),
-        "temp": 165.0,
-        "color": Color(0.72, 0.50, 0.30),
-        "fixed": false
-    })
+    _add_body(_make_body(
+        "Jupiter", "GAS_GIANT", 1.89813e27, 69911.0,
+        Vector3(-778570000.0, 0.0, 0.0),
+        Vector3(0.0, 0.0, -13.07), 165.0,
+        Color(0.68, 0.45, 0.25), false
+    ))
 
-    _add_body({
-        "name": "Saturn",
-        "type": "RINGED_PLANET",
-        "mass": 5.6834e26,
-        "radius": 58232.0,
-        "pos": Vector3(0.0, 0.0, 1433530000.0),
-        "vel": Vector3(-9.68, 0.0, 0.0),
-        "temp": 134.0,
-        "color": Color(0.80, 0.70, 0.45),
-        "fixed": false
-    })
+    _add_body(_make_body(
+        "Saturn", "RINGED_PLANET", 5.6834e26, 58232.0,
+        Vector3(0.0, 0.0, 1433530000.0),
+        Vector3(-9.68, 0.0, 0.0), 134.0,
+        Color(0.80, 0.66, 0.39), false
+    ))
+
+func _make_body(
+    display_name: String,
+    body_type: String,
+    mass_kg: float,
+    radius_km: float,
+    position_km: Vector3,
+    velocity_km_s: Vector3,
+    temperature_k: float,
+    color_value: Color,
+    fixed_value: bool
+) -> Dictionary:
+    return {
+        "name": display_name,
+        "type": body_type,
+        "mass": mass_kg,
+        "radius": radius_km,
+        "pos": position_km,
+        "vel": velocity_km_s,
+        "temp": temperature_k,
+        "color": color_value,
+        "fixed": fixed_value,
+        "node": null
+    }
 
 func _process(delta: float) -> void:
     _update_camera(delta)
@@ -144,306 +138,460 @@ func _process(delta: float) -> void:
         _simulate(delta)
 
     _sync_visuals()
-
-    if is_instance_valid(hud):
-        hud.update_status(time_scale, bodies.size(), sim_paused or pause_menu_open)
-        if selected_index >= 0 and selected_index < bodies.size():
-            hud.show_selected(bodies[selected_index])
-        else:
-            hud.show_selected({})
+    _update_hud()
 
 func _simulate(delta: float) -> void:
-    if bodies.size() < 2:
+    var body_count: int = bodies.size()
+    if body_count < 2:
         return
 
-    var total_dt := min(delta * time_scale, 86400.0 * 2.0)
-    var substeps := clampi(int(ceil(total_dt / 1200.0)), 1, 10)
-    var dt := total_dt / float(substeps)
+    var total_dt: float = minf(delta * time_scale, 172800.0)
+    var desired_steps: int = int(ceil(total_dt / 1200.0))
+    var substeps: int = clampi(desired_steps, 1, 10)
+    var dt: float = total_dt / float(substeps)
 
-    for _step in range(substeps):
+    for _step: int in range(substeps):
         var accelerations: Array[Vector3] = []
-        accelerations.resize(bodies.size())
+        accelerations.resize(body_count)
 
-        for i in range(bodies.size()):
+        for i: int in range(body_count):
             accelerations[i] = Vector3.ZERO
-            if bool(bodies[i].get("fixed", false)):
+            var body_i: Dictionary = bodies[i]
+
+            if bool(body_i.get("fixed", false)):
                 continue
 
-            var pos_i: Vector3 = bodies[i]["pos"]
-            var acceleration := Vector3.ZERO
+            var pos_i: Vector3 = body_i.get("pos", Vector3.ZERO) as Vector3
+            var acceleration: Vector3 = Vector3.ZERO
 
-            for j in range(bodies.size()):
+            for j: int in range(body_count):
                 if i == j:
                     continue
 
-                var delta_pos: Vector3 = bodies[j]["pos"] - pos_i
-                var dist_sq := max(delta_pos.length_squared(), 10000.0)
-                var inv_dist := 1.0 / sqrt(dist_sq)
-                var direction := delta_pos * inv_dist
-                acceleration += direction * (G_KM * float(bodies[j]["mass"]) / dist_sq)
+                var body_j: Dictionary = bodies[j]
+                var pos_j: Vector3 = body_j.get("pos", Vector3.ZERO) as Vector3
+                var delta_pos: Vector3 = pos_j - pos_i
+                var dist_sq: float = maxf(delta_pos.length_squared(), 10000.0)
+                var inv_dist: float = 1.0 / sqrt(dist_sq)
+                var direction: Vector3 = delta_pos * inv_dist
+                var source_mass: float = float(body_j.get("mass", 0.0))
+                acceleration += direction * (G_KM * source_mass / dist_sq)
 
             accelerations[i] = acceleration
 
-        for i in bodies.size():
-            if bool(bodies[i].get("fixed", false)):
+        for i: int in range(body_count):
+            var body: Dictionary = bodies[i]
+            if bool(body.get("fixed", false)):
                 continue
 
-            var vel: Vector3 = bodies[i]["vel"]
-            vel += accelerations[i] * dt
-            bodies[i]["vel"] = vel
-            bodies[i]["pos"] = (bodies[i]["pos"] as Vector3) + vel * dt
+            var velocity: Vector3 = body.get("vel", Vector3.ZERO) as Vector3
+            var position: Vector3 = body.get("pos", Vector3.ZERO) as Vector3
+
+            velocity += accelerations[i] * dt
+            position += velocity * dt
+
+            body["vel"] = velocity
+            body["pos"] = position
+            bodies[i] = body
 
         _resolve_collisions()
+        body_count = bodies.size()
 
 func _resolve_collisions() -> void:
-    var i := 0
+    var i: int = 0
+
     while i < bodies.size():
-        var j := i + 1
+        var j: int = i + 1
+
         while j < bodies.size():
-            var a := bodies[i]
-            var b := bodies[j]
-            var distance_km := (a["pos"] as Vector3).distance_to(b["pos"])
-            var collision_radius := (float(a["radius"]) + float(b["radius"])) * 0.82
+            var a: Dictionary = bodies[i]
+            var b: Dictionary = bodies[j]
+            var pos_a: Vector3 = a.get("pos", Vector3.ZERO) as Vector3
+            var pos_b: Vector3 = b.get("pos", Vector3.ZERO) as Vector3
+            var distance_km: float = pos_a.distance_to(pos_b)
+            var collision_radius: float = (float(a.get("radius", 0.0)) + float(b.get("radius", 0.0))) * 0.80
 
             if distance_km <= collision_radius:
                 _merge_bodies(i, j)
+
                 if selected_index == j:
                     selected_index = i
                 elif selected_index > j:
                     selected_index -= 1
+
                 continue
 
             j += 1
+
         i += 1
 
 func _merge_bodies(a_index: int, b_index: int) -> void:
-    if a_index < 0 or b_index < 0 or a_index >= bodies.size() or b_index >= bodies.size():
+    if a_index < 0 or b_index < 0:
+        return
+    if a_index >= bodies.size() or b_index >= bodies.size():
         return
 
-    var a := bodies[a_index]
-    var b := bodies[b_index]
-    var mass_a := float(a["mass"])
-    var mass_b := float(b["mass"])
-    var total_mass := mass_a + mass_b
+    var a: Dictionary = bodies[a_index]
+    var b: Dictionary = bodies[b_index]
+    var mass_a: float = float(a.get("mass", 0.0))
+    var mass_b: float = float(b.get("mass", 0.0))
+    var total_mass: float = maxf(mass_a + mass_b, 1.0)
 
-    var merged_velocity: Vector3 = (
-        (a["vel"] as Vector3) * mass_a + (b["vel"] as Vector3) * mass_b
-    ) / total_mass
+    var velocity_a: Vector3 = a.get("vel", Vector3.ZERO) as Vector3
+    var velocity_b: Vector3 = b.get("vel", Vector3.ZERO) as Vector3
+    var position_a: Vector3 = a.get("pos", Vector3.ZERO) as Vector3
+    var position_b: Vector3 = b.get("pos", Vector3.ZERO) as Vector3
 
-    var merged_position: Vector3 = (
-        (a["pos"] as Vector3) * mass_a + (b["pos"] as Vector3) * mass_b
-    ) / total_mass
+    var merged_velocity: Vector3 = (velocity_a * mass_a + velocity_b * mass_b) / total_mass
+    var merged_position: Vector3 = (position_a * mass_a + position_b * mass_b) / total_mass
 
-    var radius := pow(pow(float(a["radius"]), 3.0) + pow(float(b["radius"]), 3.0), 1.0 / 3.0)
-    var dominant := a if mass_a >= mass_b else b
+    var radius_a: float = float(a.get("radius", 1.0))
+    var radius_b: float = float(b.get("radius", 1.0))
+    var merged_radius: float = pow(pow(radius_a, 3.0) + pow(radius_b, 3.0), 1.0 / 3.0)
 
-    a["name"] = "%s + %s" % [a["name"], b["name"]]
-    a["type"] = dominant["type"]
+    var dominant: Dictionary = a if mass_a >= mass_b else b
+    var color_a: Color = a.get("color", Color.WHITE) as Color
+    var color_b: Color = b.get("color", Color.WHITE) as Color
+    var blend_factor: float = clampf(mass_b / total_mass, 0.0, 1.0)
+
+    a["name"] = "%s + %s" % [str(a.get("name", "A")), str(b.get("name", "B"))]
+    a["type"] = str(dominant.get("type", "PLANET"))
     a["mass"] = total_mass
-    a["radius"] = radius
+    a["radius"] = merged_radius
     a["vel"] = merged_velocity
     a["pos"] = merged_position
-    a["temp"] = (float(a["temp"]) * mass_a + float(b["temp"]) * mass_b) / total_mass
-    a["color"] = (a["color"] as Color).lerp(b["color"], mass_b / total_mass)
+    a["temp"] = (
+        float(a.get("temp", 250.0)) * mass_a
+        + float(b.get("temp", 250.0)) * mass_b
+    ) / total_mass
+    a["color"] = color_a.lerp(color_b, blend_factor)
     a["fixed"] = bool(a.get("fixed", false)) or bool(b.get("fixed", false))
 
-    if is_instance_valid(b.get("node")):
-        b["node"].queue_free()
+    var old_b_node: Node3D = b.get("node") as Node3D
+    if is_instance_valid(old_b_node):
+        old_b_node.queue_free()
 
     bodies[a_index] = a
     bodies.remove_at(b_index)
+
     _reindex_areas()
     _rebuild_body_visual(a_index)
 
     if is_instance_valid(hud):
-        hud.flash_notice("COLLISION MERGE")
+        hud.call("flash_notice", "COLLISION  /  MERGE")
 
 func _add_body(data: Dictionary) -> void:
     if bodies.size() >= MAX_BODIES:
         if is_instance_valid(hud):
-            hud.flash_notice("BODY LIMIT REACHED")
+            hud.call("flash_notice", "BODY LIMIT REACHED")
         return
 
-    var body := data.duplicate(true)
-    var node := _create_visual(body, bodies.size())
-    body["node"] = node
+    var body: Dictionary = data.duplicate(true)
+    var index: int = bodies.size()
+    var visual: Node3D = _create_visual(body, index)
+    body["node"] = visual
     bodies.append(body)
 
 func _create_visual(body: Dictionary, body_index: int) -> Node3D:
-    var holder := Node3D.new()
-    holder.name = str(body["name"])
+    var holder: Node3D = Node3D.new()
+    holder.name = str(body.get("name", "CelestialBody"))
     add_child(holder)
 
-    var sphere := MeshInstance3D.new()
-    var sphere_mesh := SphereMesh.new()
-    sphere_mesh.radius = 1.0
-    sphere_mesh.height = 2.0
-    sphere_mesh.radial_segments = 32 if quality_level > 0 else 20
-    sphere_mesh.rings = 16 if quality_level > 0 else 10
-    sphere.mesh = sphere_mesh
+    var body_type: String = str(body.get("type", "PLANET"))
+    var radius_km: float = float(body.get("radius", 1.0))
+    var visual_radius: float = _visual_radius(radius_km, body_type)
+
+    var sphere: MeshInstance3D = MeshInstance3D.new()
+    sphere.name = "Surface"
+    sphere.mesh = _make_sphere_mesh()
+    sphere.scale = Vector3.ONE * visual_radius
     holder.add_child(sphere)
 
-    var visual_radius := _visual_radius(float(body["radius"]), str(body["type"]))
-    sphere.scale = Vector3.ONE * visual_radius
+    var body_color: Color = body.get("color", Color.WHITE) as Color
 
-    var body_type := str(body["type"])
     if body_type == "STAR":
-        var mat := ShaderMaterial.new()
-        mat.shader = load("res://shaders/star.gdshader")
-        mat.set_shader_parameter("star_color", body["color"])
-        mat.set_shader_parameter("intensity", 3.6)
-        sphere.material_override = mat
-
-        var light := OmniLight3D.new()
-        light.light_color = body["color"]
-        light.light_energy = 5.0
-        light.omni_range = 2400.0
-        light.shadow_enabled = quality_level >= 2
-        holder.add_child(light)
+        _style_star(holder, sphere, body_color, visual_radius)
     elif body_type == "BLACK_HOLE":
-        var black_mat := ShaderMaterial.new()
-        black_mat.shader = load("res://shaders/black_hole.gdshader")
-        sphere.material_override = black_mat
-        _add_accretion_disk(holder, visual_radius)
+        _style_black_hole(holder, sphere, visual_radius)
+    elif body_type == "GAS_GIANT" or body_type == "RINGED_PLANET":
+        _style_gas_giant(holder, sphere, body_color, body_index, visual_radius, body_type == "RINGED_PLANET")
     else:
-        var mat := ShaderMaterial.new()
-        mat.shader = load("res://shaders/planet.gdshader")
-        mat.set_shader_parameter("base_color", body["color"])
-        mat.set_shader_parameter("land_color", _land_color(body["color"], body_type))
-        mat.set_shader_parameter("ocean_amount", 0.48 if str(body["name"]) == "Earth" else 0.58)
-        mat.set_shader_parameter("seed", float(body_index) * 3.17 + 1.2)
-        sphere.material_override = mat
+        _style_rocky_world(holder, sphere, body_color, body_type, body_index, visual_radius)
 
-        if body_type == "PLANET" and quality_level > 0:
-            _add_atmosphere(holder, visual_radius, body["color"])
-
-        if body_type == "RINGED_PLANET":
-            _add_ring(holder, visual_radius)
-
-    var area := Area3D.new()
+    var area: Area3D = Area3D.new()
     area.set_meta("body_index", body_index)
     holder.add_child(area)
 
-    var collision := CollisionShape3D.new()
-    var shape := SphereShape3D.new()
-    shape.radius = max(visual_radius * 1.15, 3.0)
+    var collision: CollisionShape3D = CollisionShape3D.new()
+    var shape: SphereShape3D = SphereShape3D.new()
+    shape.radius = maxf(visual_radius * 1.12, 3.0)
     collision.shape = shape
     area.add_child(collision)
 
-    holder.position = (body["pos"] as Vector3) * POSITION_SCALE
+    var position_km: Vector3 = body.get("pos", Vector3.ZERO) as Vector3
+    holder.position = position_km * POSITION_SCALE
+
     return holder
 
-func _add_atmosphere(holder: Node3D, radius_value: float, color_value: Color) -> void:
-    var atmosphere := MeshInstance3D.new()
-    var mesh := SphereMesh.new()
+func _make_sphere_mesh() -> SphereMesh:
+    var mesh: SphereMesh = SphereMesh.new()
     mesh.radius = 1.0
     mesh.height = 2.0
-    mesh.radial_segments = 28
-    mesh.rings = 14
-    atmosphere.mesh = mesh
-    atmosphere.scale = Vector3.ONE * radius_value * 1.055
 
-    var material := ShaderMaterial.new()
-    material.shader = load("res://shaders/atmosphere.gdshader")
-    material.set_shader_parameter("atmosphere_color", color_value.lerp(Color(0.25, 0.62, 1.0), 0.72))
-    material.set_shader_parameter("strength", 1.7)
+    if quality_level <= 0:
+        mesh.radial_segments = 24
+        mesh.rings = 12
+    elif quality_level == 1:
+        mesh.radial_segments = 40
+        mesh.rings = 20
+    else:
+        mesh.radial_segments = 56
+        mesh.rings = 28
+
+    return mesh
+
+func _style_star(holder: Node3D, sphere: MeshInstance3D, body_color: Color, visual_radius: float) -> void:
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/star.gdshader") as Shader
+    material.set_shader_parameter("star_color", body_color)
+    material.set_shader_parameter("intensity", 4.0)
+    sphere.material_override = material
+
+    var corona: MeshInstance3D = MeshInstance3D.new()
+    corona.name = "Corona"
+    corona.mesh = _make_sphere_mesh()
+    corona.scale = Vector3.ONE * visual_radius * 1.11
+
+    var corona_material: ShaderMaterial = ShaderMaterial.new()
+    corona_material.shader = load("res://shaders/atmosphere.gdshader") as Shader
+    corona_material.set_shader_parameter("atmosphere_color", body_color)
+    corona_material.set_shader_parameter("strength", 2.4)
+    corona_material.set_shader_parameter("density", 0.30)
+    corona.material_override = corona_material
+    holder.add_child(corona)
+
+    var light: OmniLight3D = OmniLight3D.new()
+    light.light_color = body_color
+    light.light_energy = 4.6
+    light.omni_range = 8500.0
+    light.shadow_enabled = quality_level >= 2
+    holder.add_child(light)
+
+func _style_black_hole(holder: Node3D, sphere: MeshInstance3D, visual_radius: float) -> void:
+    var black_material: ShaderMaterial = ShaderMaterial.new()
+    black_material.shader = load("res://shaders/black_hole.gdshader") as Shader
+    sphere.material_override = black_material
+
+    var photon_shell: MeshInstance3D = MeshInstance3D.new()
+    photon_shell.name = "PhotonRing"
+    photon_shell.mesh = _make_sphere_mesh()
+    photon_shell.scale = Vector3.ONE * visual_radius * 1.18
+
+    var photon_material: ShaderMaterial = ShaderMaterial.new()
+    photon_material.shader = load("res://shaders/atmosphere.gdshader") as Shader
+    photon_material.set_shader_parameter("atmosphere_color", Color(0.48, 0.18, 1.0))
+    photon_material.set_shader_parameter("strength", 1.8)
+    photon_material.set_shader_parameter("density", 0.22)
+    photon_shell.material_override = photon_material
+    holder.add_child(photon_shell)
+
+    _add_accretion_disk(holder, visual_radius)
+
+func _style_rocky_world(
+    holder: Node3D,
+    sphere: MeshInstance3D,
+    body_color: Color,
+    body_type: String,
+    body_index: int,
+    visual_radius: float
+) -> void:
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/planet.gdshader") as Shader
+    material.set_shader_parameter("base_color", body_color)
+    material.set_shader_parameter("land_color", _land_color(body_color, body_type))
+    material.set_shader_parameter("ocean_amount", 0.47 if str(holder.name) == "Earth" else 0.57)
+    material.set_shader_parameter("seed", float(body_index) * 3.17 + 1.2)
+    sphere.material_override = material
+
+    if body_type == "PLANET":
+        _add_atmosphere(holder, visual_radius, body_color)
+
+        if quality_level > 0:
+            _add_clouds(holder, visual_radius)
+
+func _style_gas_giant(
+    holder: Node3D,
+    sphere: MeshInstance3D,
+    body_color: Color,
+    body_index: int,
+    visual_radius: float,
+    has_rings: bool
+) -> void:
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/gas_giant.gdshader") as Shader
+    material.set_shader_parameter("base_color", body_color)
+    material.set_shader_parameter("band_color", body_color.lightened(0.28))
+    material.set_shader_parameter("seed", float(body_index) * 2.4 + 1.0)
+    sphere.material_override = material
+
+    if has_rings:
+        _add_ring(holder, visual_radius)
+
+func _add_atmosphere(holder: Node3D, visual_radius: float, body_color: Color) -> void:
+    var atmosphere: MeshInstance3D = MeshInstance3D.new()
+    atmosphere.name = "Atmosphere"
+    atmosphere.mesh = _make_sphere_mesh()
+    atmosphere.scale = Vector3.ONE * visual_radius * 1.055
+
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/atmosphere.gdshader") as Shader
+    material.set_shader_parameter(
+        "atmosphere_color",
+        body_color.lerp(Color(0.14, 0.52, 1.0), 0.78)
+    )
+    material.set_shader_parameter("strength", 1.75)
     material.set_shader_parameter("density", 0.25)
     atmosphere.material_override = material
     holder.add_child(atmosphere)
 
-func _add_accretion_disk(holder: Node3D, radius_value: float) -> void:
-    var disk := MeshInstance3D.new()
+func _add_clouds(holder: Node3D, visual_radius: float) -> void:
+    var clouds: MeshInstance3D = MeshInstance3D.new()
+    clouds.name = "Clouds"
+    clouds.mesh = _make_sphere_mesh()
+    clouds.scale = Vector3.ONE * visual_radius * 1.025
+
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/clouds.gdshader") as Shader
+    material.set_shader_parameter("density", 0.50)
+    material.set_shader_parameter("speed", 0.018)
+    clouds.material_override = material
+    holder.add_child(clouds)
+
+func _add_accretion_disk(holder: Node3D, visual_radius: float) -> void:
+    var disk: MeshInstance3D = MeshInstance3D.new()
     disk.name = "AccretionDisk"
-    var mesh := CylinderMesh.new()
+
+    var mesh: CylinderMesh = CylinderMesh.new()
     mesh.top_radius = 1.0
     mesh.bottom_radius = 1.0
-    mesh.height = 0.018
-    mesh.radial_segments = 96 if quality_level >= 2 else 48
+    mesh.height = 0.03
+    mesh.radial_segments = 64 if quality_level > 0 else 40
     disk.mesh = mesh
-    disk.scale = Vector3(radius_value * 5.4, radius_value * 0.15, radius_value * 5.4)
+    disk.scale = Vector3(visual_radius * 5.2, visual_radius * 0.08, visual_radius * 5.2)
 
-    var mat := ShaderMaterial.new()
-    mat.shader = load("res://shaders/accretion.gdshader")
-    disk.material_override = mat
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/accretion.gdshader") as Shader
+    disk.material_override = material
     holder.add_child(disk)
 
-func _add_ring(holder: Node3D, radius_value: float) -> void:
-    var ring := MeshInstance3D.new()
-    var mesh := CylinderMesh.new()
+func _add_ring(holder: Node3D, visual_radius: float) -> void:
+    var ring: MeshInstance3D = MeshInstance3D.new()
+    ring.name = "PlanetRing"
+
+    var mesh: CylinderMesh = CylinderMesh.new()
     mesh.top_radius = 1.0
     mesh.bottom_radius = 1.0
     mesh.height = 0.012
-    mesh.radial_segments = 72
+    mesh.radial_segments = 80 if quality_level > 0 else 48
     ring.mesh = mesh
-    ring.scale = Vector3(radius_value * 2.6, radius_value * 0.05, radius_value * 2.6)
+    ring.scale = Vector3(visual_radius * 2.55, visual_radius * 0.035, visual_radius * 2.55)
 
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = Color(0.78, 0.66, 0.43, 0.42)
-    mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-    ring.material_override = mat
+    var material: ShaderMaterial = ShaderMaterial.new()
+    material.shader = load("res://shaders/rings.gdshader") as Shader
+    ring.material_override = material
     holder.add_child(ring)
 
 func _sync_visuals() -> void:
-    for body in bodies:
-        var node: Node3D = body.get("node")
-        if is_instance_valid(node):
-            node.position = (body["pos"] as Vector3) * POSITION_SCALE
+    for i: int in range(bodies.size()):
+        var body: Dictionary = bodies[i]
+        var node: Node3D = body.get("node") as Node3D
 
-            var disk := node.get_node_or_null("AccretionDisk")
-            if is_instance_valid(disk):
-                disk.rotate_y(get_process_delta_time() * 0.35)
+        if not is_instance_valid(node):
+            continue
+
+        var position_km: Vector3 = body.get("pos", Vector3.ZERO) as Vector3
+        node.position = position_km * POSITION_SCALE
+
+        var disk: Node3D = node.get_node_or_null("AccretionDisk") as Node3D
+        if is_instance_valid(disk):
+            disk.rotate_y(get_process_delta_time() * 0.34)
+
+        var clouds: Node3D = node.get_node_or_null("Clouds") as Node3D
+        if is_instance_valid(clouds):
+            clouds.rotate_y(get_process_delta_time() * 0.012)
 
 func _update_camera(delta: float) -> void:
-    if pause_menu_open:
+    if pause_menu_open or not is_instance_valid(camera):
         return
 
-    var move := Vector3.ZERO
-    if Input.is_key_pressed(KEY_W):
-        move -= camera.global_transform.basis.z
-    if Input.is_key_pressed(KEY_S):
-        move += camera.global_transform.basis.z
-    if Input.is_key_pressed(KEY_A):
-        move -= camera.global_transform.basis.x
-    if Input.is_key_pressed(KEY_D):
-        move += camera.global_transform.basis.x
-    if Input.is_key_pressed(KEY_E):
-        move += Vector3.UP
-    if Input.is_key_pressed(KEY_Q):
-        move -= Vector3.UP
+    var movement: Vector3 = Vector3.ZERO
 
-    if move.length_squared() > 0.0:
-        var multiplier := 5.0 if Input.is_key_pressed(KEY_SHIFT) else 1.0
-        camera.position += move.normalized() * camera_speed * multiplier * delta
+    if Input.is_key_pressed(KEY_W):
+        movement -= camera.global_transform.basis.z
+    if Input.is_key_pressed(KEY_S):
+        movement += camera.global_transform.basis.z
+    if Input.is_key_pressed(KEY_A):
+        movement -= camera.global_transform.basis.x
+    if Input.is_key_pressed(KEY_D):
+        movement += camera.global_transform.basis.x
+    if Input.is_key_pressed(KEY_E):
+        movement += Vector3.UP
+    if Input.is_key_pressed(KEY_Q):
+        movement -= Vector3.UP
+
+    if movement.length_squared() > 0.0:
+        var speed_multiplier: float = 5.0 if Input.is_key_pressed(KEY_SHIFT) else 1.0
+        camera.position += movement.normalized() * camera_speed * speed_multiplier * delta
+
+func _update_hud() -> void:
+    if not is_instance_valid(hud):
+        return
+
+    hud.call("update_status", time_scale, bodies.size(), sim_paused or pause_menu_open)
+
+    if selected_index >= 0 and selected_index < bodies.size():
+        hud.call("show_selected", bodies[selected_index])
+    else:
+        hud.call("show_selected", {})
 
 func _unhandled_input(event: InputEvent) -> void:
-    if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-        camera.rotate_y(-event.relative.x * mouse_sensitivity)
-        camera.rotation.x = clamp(
-            camera.rotation.x - event.relative.y * mouse_sensitivity,
-            deg_to_rad(-88.0),
-            deg_to_rad(88.0)
-        )
+    if event is InputEventMouseMotion:
+        var motion: InputEventMouseMotion = event as InputEventMouseMotion
+        if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not pause_menu_open:
+            camera.rotate_y(-motion.relative.x * mouse_sensitivity)
+            camera.rotation.x = clampf(
+                camera.rotation.x - motion.relative.y * mouse_sensitivity,
+                deg_to_rad(-88.0),
+                deg_to_rad(88.0)
+            )
+            return
 
-    if event is InputEventMouseButton and event.pressed:
-        if event.button_index == MOUSE_BUTTON_LEFT and not pause_menu_open:
-            _select_at_screen(event.position)
+    if event is InputEventMouseButton:
+        var mouse_button: InputEventMouseButton = event as InputEventMouseButton
+        if mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_LEFT and not pause_menu_open:
+            _select_at_screen(mouse_button.position)
+            return
 
-    if event is InputEventKey and event.pressed and not event.echo:
-        match event.keycode:
+    if event is InputEventKey:
+        var key_event: InputEventKey = event as InputEventKey
+        if not key_event.pressed or key_event.echo:
+            return
+
+        match key_event.keycode:
             KEY_ESCAPE:
                 _toggle_pause_menu()
             KEY_SPACE:
                 if not pause_menu_open:
                     sim_paused = not sim_paused
-                    hud.flash_notice("PAUSED" if sim_paused else "RUNNING")
+                    hud.call("flash_notice", "PAUSED" if sim_paused else "RUNNING")
             KEY_BRACKETLEFT:
-                time_scale = max(1.0, time_scale * 0.5)
-                hud.flash_notice("TIME ×%s" % _short_scale())
+                if not pause_menu_open:
+                    time_scale = maxf(1.0, time_scale * 0.5)
+                    hud.call("flash_notice", "TIME  ×%s" % _short_scale())
             KEY_BRACKETRIGHT:
-                time_scale = min(2592000.0, time_scale * 2.0)
-                hud.flash_notice("TIME ×%s" % _short_scale())
+                if not pause_menu_open:
+                    time_scale = minf(2592000.0, time_scale * 2.0)
+                    hud.call("flash_notice", "TIME  ×%s" % _short_scale())
             KEY_1:
                 _spawn_in_front("PLANET")
             KEY_2:
@@ -456,186 +604,238 @@ func _unhandled_input(event: InputEvent) -> void:
                 _quick_load()
 
 func _select_at_screen(screen_position: Vector2) -> void:
-    var from := camera.project_ray_origin(screen_position)
-    var to := from + camera.project_ray_normal(screen_position) * 20000.0
-    var query := PhysicsRayQueryParameters3D.create(from, to)
+    if not is_instance_valid(camera):
+        return
+
+    var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+    var ray_end: Vector3 = ray_origin + camera.project_ray_normal(screen_position) * 24000.0
+    var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
     query.collide_with_areas = true
     query.collide_with_bodies = false
 
-    var result := get_world_3d().direct_space_state.intersect_ray(query)
+    var result: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+
     if result.is_empty():
         selected_index = -1
         return
 
-    var collider = result.get("collider")
-    if collider != null and collider.has_meta("body_index"):
-        selected_index = int(collider.get_meta("body_index"))
+    var collider_variant: Variant = result.get("collider")
+    if collider_variant is Area3D:
+        var collider: Area3D = collider_variant as Area3D
+        if collider.has_meta("body_index"):
+            selected_index = int(collider.get_meta("body_index"))
 
 func _spawn_in_front(body_type: String) -> void:
-    if pause_menu_open:
+    if pause_menu_open or not is_instance_valid(camera):
         return
 
-    var world_pos := camera.global_position - camera.global_transform.basis.z * 170.0
-    var pos_km := world_pos / POSITION_SCALE
-    var data: Dictionary
+    var world_position: Vector3 = camera.global_position - camera.global_transform.basis.z * 170.0
+    var position_km: Vector3 = world_position / POSITION_SCALE
+    var body: Dictionary
 
     if body_type == "STAR":
-        data = {
-            "name": "New Star",
-            "type": "STAR",
-            "mass": 1.98847e30,
-            "radius": 695700.0,
-            "pos": pos_km,
-            "vel": Vector3.ZERO,
-            "temp": 5772.0,
-            "color": Color(1.0, 0.55, 0.14),
-            "fixed": false
-        }
+        body = _make_body(
+            "New Star", "STAR", 1.98847e30, 695700.0,
+            position_km, Vector3.ZERO, 5772.0,
+            Color(1.0, 0.55, 0.12), false
+        )
     elif body_type == "BLACK_HOLE":
-        data = {
-            "name": "Black Hole",
-            "type": "BLACK_HOLE",
-            "mass": 1.98847e31,
-            "radius": 29.53,
-            "pos": pos_km,
-            "vel": Vector3.ZERO,
-            "temp": 0.000001,
-            "color": Color.BLACK,
-            "fixed": false
-        }
+        body = _make_body(
+            "Black Hole", "BLACK_HOLE", 1.98847e31, 29.53,
+            position_km, Vector3.ZERO, 0.000001,
+            Color.BLACK, false
+        )
     else:
-        data = {
-            "name": "New Planet",
-            "type": "PLANET",
-            "mass": 5.9722e24,
-            "radius": 6371.0,
-            "pos": pos_km,
-            "vel": Vector3.ZERO,
-            "temp": 288.0,
-            "color": Color(0.08, 0.35, 0.92),
-            "fixed": false
-        }
+        body = _make_body(
+            "New Planet", "PLANET", 5.9722e24, 6371.0,
+            position_km, Vector3.ZERO, 288.0,
+            Color(0.04, 0.32, 0.92), false
+        )
 
-    _add_body(data)
-    hud.flash_notice(body_type.replace("_", " ") + " CREATED")
+    _add_body(body)
+
+    if is_instance_valid(hud):
+        hud.call("flash_notice", body_type.replace("_", " ") + " CREATED")
 
 func _toggle_pause_menu() -> void:
     pause_menu_open = not pause_menu_open
-    hud.set_pause_menu_visible(pause_menu_open)
+
+    if is_instance_valid(hud):
+        hud.call("set_pause_menu_visible", pause_menu_open)
+
     Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if pause_menu_open else Input.MOUSE_MODE_CAPTURED
+
+func _resume_from_menu() -> void:
+    pause_menu_open = false
+
+    if is_instance_valid(hud):
+        hud.call("set_pause_menu_visible", false)
+
+    Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _return_to_menu() -> void:
     exit_requested.emit()
 
 func _visual_radius(radius_km: float, body_type: String) -> float:
-    var result := clamp(pow(log(max(radius_km, 1.0)) / log(10.0), 2.0) * 0.43, 2.2, 42.0)
+    var safe_radius: float = maxf(radius_km, 1.0)
+    var log_radius: float = log(safe_radius) / log(10.0)
+    var result: float = clampf(pow(log_radius, 2.0) * 0.55, 2.3, 45.0)
+
     if body_type == "STAR":
-        result *= 1.55
+        result *= 1.65
     elif body_type == "BLACK_HOLE":
-        result = clamp(result * 2.2, 8.0, 52.0)
+        result = clampf(result * 2.4, 9.0, 55.0)
+
     return result
 
-func _land_color(base: Color, body_type: String) -> Color:
+func _land_color(base_color: Color, body_type: String) -> Color:
     if body_type == "MOON":
-        return Color(0.38, 0.38, 0.39)
-    if base.r > base.b:
-        return base.lightened(0.16)
-    return Color(0.07, 0.30, 0.13)
+        return Color(0.36, 0.37, 0.39)
+    if body_type == "ROCKY":
+        return base_color.lightened(0.18)
+    if base_color.b > base_color.r:
+        return Color(0.055, 0.29, 0.12)
+    return base_color.lightened(0.12)
 
 func _reindex_areas() -> void:
-    for i in bodies.size():
-        var node: Node3D = bodies[i].get("node")
+    for i: int in range(bodies.size()):
+        var body: Dictionary = bodies[i]
+        var node: Node3D = body.get("node") as Node3D
+
         if not is_instance_valid(node):
             continue
-        for child in node.get_children():
+
+        var children: Array[Node] = node.get_children()
+        for child: Node in children:
             if child is Area3D:
-                child.set_meta("body_index", i)
+                var area: Area3D = child as Area3D
+                area.set_meta("body_index", i)
 
 func _rebuild_body_visual(index: int) -> void:
     if index < 0 or index >= bodies.size():
         return
 
-    var old_node: Node3D = bodies[index].get("node")
+    var body: Dictionary = bodies[index]
+    var old_node: Node3D = body.get("node") as Node3D
+
     if is_instance_valid(old_node):
         old_node.queue_free()
 
-    bodies[index]["node"] = _create_visual(bodies[index], index)
+    body["node"] = _create_visual(body, index)
+    bodies[index] = body
 
 func _quick_save() -> void:
     var save_bodies: Array = []
-    for body in bodies:
+
+    for i: int in range(bodies.size()):
+        var body: Dictionary = bodies[i]
+        var position: Vector3 = body.get("pos", Vector3.ZERO) as Vector3
+        var velocity: Vector3 = body.get("vel", Vector3.ZERO) as Vector3
+        var color_value: Color = body.get("color", Color.WHITE) as Color
+
         save_bodies.append({
-            "name": body["name"],
-            "type": body["type"],
-            "mass": body["mass"],
-            "radius": body["radius"],
-            "pos": _vec_to_array(body["pos"]),
-            "vel": _vec_to_array(body["vel"]),
-            "temp": body["temp"],
-            "color": _color_to_array(body["color"]),
-            "fixed": body.get("fixed", false)
+            "name": str(body.get("name", "Body")),
+            "type": str(body.get("type", "PLANET")),
+            "mass": float(body.get("mass", 1.0)),
+            "radius": float(body.get("radius", 1.0)),
+            "pos": [position.x, position.y, position.z],
+            "vel": [velocity.x, velocity.y, velocity.z],
+            "temp": float(body.get("temp", 250.0)),
+            "color": [color_value.r, color_value.g, color_value.b, color_value.a],
+            "fixed": bool(body.get("fixed", false))
         })
 
-    var payload := {
-        "version": 1,
+    var payload: Dictionary = {
+        "version": 2,
         "time_scale": time_scale,
         "bodies": save_bodies
     }
 
-    var file := FileAccess.open("user://raken_quicksave.json", FileAccess.WRITE)
-    if file:
+    var file: FileAccess = FileAccess.open("user://raken_quicksave.json", FileAccess.WRITE)
+
+    if file != null:
         file.store_string(JSON.stringify(payload))
-        hud.flash_notice("QUICK SAVE COMPLETE")
+        if is_instance_valid(hud):
+            hud.call("flash_notice", "QUICK SAVE COMPLETE")
 
 func _quick_load() -> void:
     if not FileAccess.file_exists("user://raken_quicksave.json"):
-        hud.flash_notice("NO QUICK SAVE")
+        if is_instance_valid(hud):
+            hud.call("flash_notice", "NO QUICK SAVE")
         return
 
-    var file := FileAccess.open("user://raken_quicksave.json", FileAccess.READ)
+    var file: FileAccess = FileAccess.open("user://raken_quicksave.json", FileAccess.READ)
     if file == null:
         return
 
-    var parsed = JSON.parse_string(file.get_as_text())
+    var parsed: Variant = JSON.parse_string(file.get_as_text())
     if not (parsed is Dictionary):
-        hud.flash_notice("SAVE FILE ERROR")
+        if is_instance_valid(hud):
+            hud.call("flash_notice", "SAVE FILE ERROR")
         return
 
-    for body in bodies:
-        var node: Node3D = body.get("node")
-        if is_instance_valid(node):
-            node.queue_free()
+    var payload: Dictionary = parsed as Dictionary
+    var raw_bodies: Array = payload.get("bodies", []) as Array
+
+    for i: int in range(bodies.size()):
+        var current: Dictionary = bodies[i]
+        var current_node: Node3D = current.get("node") as Node3D
+        if is_instance_valid(current_node):
+            current_node.queue_free()
 
     bodies.clear()
     selected_index = -1
-    time_scale = float(parsed.get("time_scale", 7200.0))
+    time_scale = float(payload.get("time_scale", 7200.0))
 
-    for raw in parsed.get("bodies", []):
-        var c: Array = raw.get("color", [0.5, 0.5, 0.5, 1.0])
-        _add_body({
-            "name": raw.get("name", "Body"),
-            "type": raw.get("type", "PLANET"),
-            "mass": float(raw.get("mass", 1.0e20)),
-            "radius": float(raw.get("radius", 1000.0)),
-            "pos": _array_to_vec(raw.get("pos", [0,0,0])),
-            "vel": _array_to_vec(raw.get("vel", [0,0,0])),
-            "temp": float(raw.get("temp", 250.0)),
-            "color": Color(float(c[0]), float(c[1]), float(c[2]), float(c[3])),
-            "fixed": bool(raw.get("fixed", false))
-        })
+    for i: int in range(raw_bodies.size()):
+        var raw_variant: Variant = raw_bodies[i]
+        if not (raw_variant is Dictionary):
+            continue
 
-    hud.flash_notice("QUICK SAVE LOADED")
+        var raw: Dictionary = raw_variant as Dictionary
+        var pos_array: Array = raw.get("pos", [0.0, 0.0, 0.0]) as Array
+        var vel_array: Array = raw.get("vel", [0.0, 0.0, 0.0]) as Array
+        var color_array: Array = raw.get("color", [0.5, 0.5, 0.5, 1.0]) as Array
 
-func _vec_to_array(value: Vector3) -> Array:
-    return [value.x, value.y, value.z]
+        var position: Vector3 = _array_to_vector3(pos_array)
+        var velocity: Vector3 = _array_to_vector3(vel_array)
+        var color_value: Color = _array_to_color(color_array)
 
-func _array_to_vec(value: Array) -> Vector3:
-    if value.size() < 3:
+        _add_body(_make_body(
+            str(raw.get("name", "Body")),
+            str(raw.get("type", "PLANET")),
+            float(raw.get("mass", 1.0e20)),
+            float(raw.get("radius", 1000.0)),
+            position,
+            velocity,
+            float(raw.get("temp", 250.0)),
+            color_value,
+            bool(raw.get("fixed", false))
+        ))
+
+    if is_instance_valid(hud):
+        hud.call("flash_notice", "QUICK SAVE LOADED")
+
+func _array_to_vector3(values: Array) -> Vector3:
+    if values.size() < 3:
         return Vector3.ZERO
-    return Vector3(float(value[0]), float(value[1]), float(value[2]))
 
-func _color_to_array(value: Color) -> Array:
-    return [value.r, value.g, value.b, value.a]
+    return Vector3(
+        float(values[0]),
+        float(values[1]),
+        float(values[2])
+    )
+
+func _array_to_color(values: Array) -> Color:
+    if values.size() < 4:
+        return Color(0.5, 0.5, 0.5, 1.0)
+
+    return Color(
+        float(values[0]),
+        float(values[1]),
+        float(values[2]),
+        float(values[3])
+    )
 
 func _short_scale() -> String:
     if time_scale >= 86400.0:
